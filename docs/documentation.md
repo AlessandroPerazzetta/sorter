@@ -23,6 +23,7 @@ The **Rust Sorter Benchmark Suite** is a comprehensive, high-performance collect
 - **Advanced Benchmarking**: Parallel execution, multiple test profiles, and interactive HTML reports
 - **GPU Acceleration Framework**: Infrastructure for GPU-accelerated sorting (currently CPU-fallback)
 - **Data Persistence**: Save/load test data for reproducible benchmarking
+- **Result Archiving**: Save detailed sorting results as JSON for analysis and verification
 - **Comprehensive Testing**: Edge cases, multiple data distributions, and performance validation
 
 ### Project Goals
@@ -199,6 +200,9 @@ The benchmarking system provides comprehensive CLI options:
 ./run_tests.sh --save-data test_data.txt
 ./run_tests.sh --load-data test_data.txt
 
+# Save sorting results as JSON
+./run_tests.sh --save-results ./results
+
 # Output options
 ./run_tests.sh --output json
 ./run_tests.sh --output html
@@ -265,18 +269,28 @@ pub enum SortableData {
 
 ### Data Persistence
 
-**Saving Data**:
+**Saving Test Data**:
 ```bash
 ./run_tests.sh --save-data my_test_data.txt
 ```
 
-**Loading Data**:
+**Loading Test Data**:
 ```bash
 ./run_tests.sh --load-data my_test_data.txt
 ```
 
+**Saving Sorting Results as JSON**:
+```bash
+# Save individual sorting results to directory
+./run_tests.sh --save-results ./results --profile light
+
+# Save results from individual runs
+cargo run -- --save-results ./results bubble random 1000
+```
+
 **File Format**:
 ```
+# Test data file format (text)
 # Comment lines start with #
 # Data type specification
 i32
@@ -286,10 +300,27 @@ i32
 1000
 ```
 
+**JSON Result Format**:
+```json
+{
+  "algorithm": "bubble",
+  "data_type": "i32",
+  "data_pattern": "random",
+  "size": 1000,
+  "execution_time_seconds": 0.012345,
+  "passes": 1000,
+  "parallel": false,
+  "gpu_accelerated": false,
+  "timestamp": 1708123456,
+  "sorted_data": ["0", "1", "2", ..., "999"]
+}
+```
+
 **Benefits**:
 - **Reproducible Benchmarks**: Same input data across runs
 - **Performance Analysis**: Compare algorithm behavior on identical data
-- **Debugging**: Isolate performance characteristics
+- **Result Archiving**: Save detailed sorting results for later analysis
+- **Debugging**: Isolate performance characteristics and verify correctness
 
 ## GPU Acceleration
 
@@ -366,6 +397,9 @@ cargo test
 
 # Use saved data for consistent testing
 ./run_tests.sh --load-data benchmark_data.txt --algorithms "merge,quick"
+
+# Save sorting results as JSON files
+./run_tests.sh --save-results ./results --profile light
 ```
 
 #### Performance Analysis

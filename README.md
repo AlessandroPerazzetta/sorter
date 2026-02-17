@@ -134,14 +134,15 @@ GPU-accelerated bitonic sort, well-suited for GPU implementation due to its para
 
 ### Data Persistence
 
-The sorter supports saving and loading test data for reproducible benchmarking:
+The sorter supports saving and loading test data for reproducible benchmarking, as well as saving sorting results for detailed analysis:
 
 - **Save Data**: Use `--save-data <file>` to save generated test data to a file
 - **Load Data**: Use `--load-data <file>` to load previously saved data instead of generating new data
-- **File Format**: Text files with one integer per line
+- **Save Results**: Use `--save-results <dir>` to save sorting results as JSON files to a directory
+- **File Format**: Text files with one value per line for data; JSON files for results
 - **Validation**: Loaded data is validated for correct format and content
 
-This feature enables consistent performance testing with identical input data across different runs.
+This feature enables consistent performance testing with identical input data across different runs and preserves detailed sorting results for further analysis.
 
 ## Usage
 
@@ -163,6 +164,9 @@ cargo run -- --save-data data.txt <algorithm> <data_pattern> <size>
 # Load data from file instead of generating
 cargo run -- --load-data data.txt --data-type <type> <algorithm> <data_pattern> <size>
 
+# Save sorting results as JSON to directory
+cargo run -- --save-results ./results <algorithm> <data_pattern> <size>
+
 # Examples
 cargo run -- bubble random 1000
 cargo run -- --data-type f64 quick sorted 500
@@ -172,6 +176,7 @@ cargo run -- --load-data input_data.txt --data-type i16 quick sorted 500
 cargo run -- --parallel --data-type u64 merge reverse 2000
 cargo run -- gpu-sort random 1000
 cargo run -- gpu-bitonic reverse 1000
+cargo run -- --save-results ./results bubble random 1000
 ```
 
 ### Supported Data Types
@@ -224,6 +229,9 @@ The suite includes a comprehensive benchmarking script with multiple optimizatio
 # Load saved data for consistent benchmarking
 ./run_tests.sh --load-data ./benchmark_data --profile light
 
+# Save sorting results as JSON files
+./run_tests.sh --save-results ./results --profile light
+
 # JSON-only execution (no reports generated)
 ./run_tests.sh --json-only
 
@@ -249,6 +257,7 @@ The suite includes a comprehensive benchmarking script with multiple optimizatio
 | `--parallel` | Use parallel algorithms where available | `cargo run -- --parallel merge random 1000` |
 | `--save-data <file>` | Save generated data to file | `cargo run -- --save-data data.txt bubble random 100` |
 | `--load-data <file>` | Load data from file instead of generating | `cargo run -- --load-data data.txt bubble random 100` |
+| `--save-results <dir>` | Save sorting results as JSON to directory | `cargo run -- --save-results ./results bubble random 100` |
 | `<algorithm>` | Sorting algorithm to use | `bubble`, `quick`, `merge`, etc. |
 | `<data_type>` | Type of test data | `random`, `sorted`, `reverse`, etc. |
 | `<size>` | Size of the data set | `1000`, `5000`, etc. |
@@ -262,6 +271,7 @@ The suite includes a comprehensive benchmarking script with multiple optimizatio
 | `--size, --sizes` | Custom data sizes (comma-separated) | `./run_tests.sh --size "100,500,1000"` |
 | `--save-data` | Save generated data to directory | `./run_tests.sh --save-data ./data` |
 | `--load-data` | Load data from directory instead of generating | `./run_tests.sh --load-data ./data` |
+| `--save-results` | Save sorting results as JSON files to directory | `./run_tests.sh --save-results ./results` |
 | `--json-only` | Run tests and generate JSON only | `./run_tests.sh --json-only` |
 | `--parallel` | Run tests in parallel | `./run_tests.sh --parallel` |
 | `--max-jobs` | Maximum parallel jobs (default: 4) | `./run_tests.sh --parallel --max-jobs 8` |
@@ -283,6 +293,10 @@ Reports are saved in the `reports/` directory with timestamps:
 - `reports/benchmark_results_YYYYMMDD_HHMMSS.json` - JSON results (always generated)
 - `reports/benchmark_results_YYYYMMDD_HHMMSS.txt` - Detailed text results (optional)
 - `reports/benchmark_results_YYYYMMDD_HHMMSS.html` - Interactive HTML report with charts (optional)
+
+Individual sorting results can also be saved as JSON files using the `--save-results` option:
+
+- `<dir>/algorithm_datapattern_size_datatype_timestamp.json` - Individual result files containing algorithm info, execution time, and sorted data
 
 ### Data Types
 
