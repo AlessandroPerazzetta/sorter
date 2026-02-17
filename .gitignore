@@ -5,6 +5,9 @@ Cargo.lock
 # Benchmark reports
 reports/
 
+# Saved generated data
+data/
+
 # Agent and AI assistant files
 .cursorrules
 .grok-instructions.md

@@ -263,8 +263,8 @@ if [ "$GENERATE_HTML" = true ]; then
     # Calculate aggregates for charts
     declare -A algo_times
     declare -A algo_counts
-    declare -A data_type_times
-    declare -A data_type_counts
+    declare -A algo_data_type_times
+    declare -A algo_data_type_counts
 
     for key in "${!JSON_RESULTS[@]}"; do
         result="${JSON_RESULTS[$key]}"
@@ -276,8 +276,8 @@ if [ "$GENERATE_HTML" = true ]; then
         if [ "$success" = "true" ] && [ "$time_val" != "null" ]; then
             algo_times[$algo]=$(awk -v current="${algo_times[$algo]}" -v add="$time_val" "BEGIN {print current + add}" 2>/dev/null || echo "0")
             algo_counts[$algo]=$((algo_counts[$algo] + 1))
-            data_type_times[$data_type]=$(awk -v current="${data_type_times[$data_type]}" -v add="$time_val" "BEGIN {print current + add}" 2>/dev/null || echo "0")
-            data_type_counts[$data_type]=$((data_type_counts[$data_type] + 1))
+            algo_data_type_times["$algo-$data_type"]=$(awk -v current="${algo_data_type_times[$algo-$data_type]}" -v add="$time_val" "BEGIN {print current + add}" 2>/dev/null || echo "0")
+            algo_data_type_counts["$algo-$data_type"]=$((algo_data_type_counts[$algo-$data_type] + 1))
         fi
     done
 
@@ -309,7 +309,7 @@ if [ "$GENERATE_HTML" = true ]; then
     ALGO_COLORS="${ALGO_COLORS%, }"
 
     DATA_TYPE_LABELS=""
-    DATA_TYPE_AVG_TIMES=""
+    DATA_TYPE_DATASETS=""
 
     # Get all data types that were tested
     declare -A tested_data_types
@@ -319,15 +319,40 @@ if [ "$GENERATE_HTML" = true ]; then
         tested_data_types[$data_type]=1
     done
 
-    for data_type in "${!tested_data_types[@]}"; do
-        if [ "${data_type_counts[$data_type]}" -gt 0 ]; then
-            avg_time=$(awk "BEGIN {printf \"%.6f\", ${data_type_times[$data_type]} / ${data_type_counts[$data_type]}}")
-            DATA_TYPE_LABELS="${DATA_TYPE_LABELS}\"${data_type}\", "
-            DATA_TYPE_AVG_TIMES="${DATA_TYPE_AVG_TIMES}${avg_time}, "
-        fi
+    # Sort data types for consistent ordering
+    for data_type in $(printf '%s\n' "${!tested_data_types[@]}" | sort); do
+        DATA_TYPE_LABELS="${DATA_TYPE_LABELS}\"${data_type}\", "
     done
     DATA_TYPE_LABELS="${DATA_TYPE_LABELS%, }"
-    DATA_TYPE_AVG_TIMES="${DATA_TYPE_AVG_TIMES%, }"
+
+    # Generate datasets for each algorithm
+    for algo in "${!tested_algos[@]}"; do
+        display_name=$(get_algo_display_name "$algo")
+        color=$(get_algo_color "$algo")
+        algo_data=""
+        
+        for data_type in $(printf '%s\n' "${!tested_data_types[@]}" | sort); do
+            key="$algo-$data_type"
+            if [ "${algo_data_type_counts[$key]}" -gt 0 ]; then
+                avg_time=$(awk "BEGIN {printf \"%.6f\", ${algo_data_type_times[$key]} / ${algo_data_type_counts[$key]}}")
+                algo_data="${algo_data}${avg_time}, "
+            else
+                algo_data="${algo_data}null, "
+            fi
+        done
+        algo_data="${algo_data%, }"
+        
+        DATA_TYPE_DATASETS="${DATA_TYPE_DATASETS}{
+            label: '${display_name}',
+            data: [${algo_data}],
+            backgroundColor: '${color}',
+            borderColor: '${color}',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4
+        }, "
+    done
+    DATA_TYPE_DATASETS="${DATA_TYPE_DATASETS%, }"
 
     # Generate HTML content (same as in run_tests.sh)
     cat > "$HTML_FILE" << 'EOF'
@@ -825,15 +850,7 @@ EOF
             type: 'line',
             data: {
                 labels: [${DATA_TYPE_LABELS}],
-                datasets: [{
-                    label: 'Average Time (seconds)',
-                    data: [${DATA_TYPE_AVG_TIMES}],
-                    backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                    borderColor: 'rgba(52, 152, 219, 1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
+                datasets: [${DATA_TYPE_DATASETS}]
             },
             options: {
                 responsive: true,
@@ -855,7 +872,7 @@ EOF
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Average Execution Time by Data Type'
+                        text: 'Average Execution Time by Data Type and Algorithm'
                     }
                 }
             }

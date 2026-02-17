@@ -135,21 +135,21 @@ case $PROFILE in
         # Light profile: 3 algorithms × 2 data types × 1 size = 5 tests
         ALGORITHMS=("bubble" "selection" "insertion")
         DATA_PATTERNS=("random" "sorted")
-        DATA_TYPES=("i32")
+        DATA_TYPES=("i32" "f64")
         DEFAULT_SIZES=(100)
         ;;
     "medium")
         # Medium profile: 5 algorithms × 4 data types × 2 sizes = 50 tests
         ALGORITHMS=("bubble" "selection" "insertion" "merge" "quick")
         DATA_PATTERNS=("random" "sorted" "reverse" "nearly")
-        DATA_TYPES=("i32")
+        DATA_TYPES=("i32" "i64" "f32" "f64")
         DEFAULT_SIZES=(100 1000)
         ;;
     "full")
         # Full profile: 8 algorithms × 5 data types × 5 sizes = 200 tests
         ALGORITHMS=("bubble" "selection" "insertion" "merge" "quick" "heap" "parallel-bubble" "parallel-merge")
         DATA_PATTERNS=("random" "sorted" "reverse" "nearly" "duplicates")
-        DATA_TYPES=("i32")
+        DATA_TYPES=("i32" "i64" "u32" "f32" "f64")
         DEFAULT_SIZES=(100 500 1000 5000 10000)
         ;;
     *)
@@ -934,16 +934,21 @@ if [ "$GENERATE_HTML" = true ] && [ "$GENERATE_JSON_ONLY" = false ]; then
     # Calculate algorithm aggregates from JSON_RESULTS
     declare -A algo_times
     declare -A algo_counts
+    declare -A algo_data_type_times
+    declare -A algo_data_type_counts
     for key in "${!JSON_RESULTS[@]}"; do
         json_data="${JSON_RESULTS[$key]}"
-        # Extract algorithm, time, and success from JSON
+        # Extract algorithm, data_type, time, and success from JSON
         algo=$(echo "$json_data" | sed 's/.*"algorithm":"\([^"]*\)".*/\1/')
+        data_type=$(echo "$json_data" | sed 's/.*"data_type":"\([^"]*\)".*/\1/')
         time_val=$(echo "$json_data" | sed 's/.*"time_seconds":\([^,}]*\).*/\1/')
         success=$(echo "$json_data" | sed 's/.*"success":\([^}]*\).*/\1/')
         
         if [ "$success" = "true" ] && [ "$time_val" != "null" ]; then
             algo_times[$algo]=$(awk -v current="${algo_times[$algo]}" -v add="$time_val" "BEGIN {print current + add}" 2>/dev/null || echo "0")
             algo_counts[$algo]=$((algo_counts[$algo] + 1))
+            algo_data_type_times["$algo-$data_type"]=$(awk -v current="${algo_data_type_times[$algo-$data_type]}" -v add="$time_val" "BEGIN {print current + add}" 2>/dev/null || echo "0")
+            algo_data_type_counts["$algo-$data_type"]=$((algo_data_type_counts[$algo-$data_type] + 1))
         fi
     done
     
@@ -962,33 +967,50 @@ if [ "$GENERATE_HTML" = true ] && [ "$GENERATE_JSON_ONLY" = false ]; then
     ALGO_COLORS="${ALGO_COLORS%, }"
 
     DATA_TYPE_LABELS=""
-    DATA_TYPE_AVG_TIMES=""
+    DATA_TYPE_DATASETS=""
     
-    # Calculate data type aggregates from JSON_RESULTS
-    declare -A data_type_times
-    declare -A data_type_counts
+    # Get all data types that were tested
+    declare -A tested_data_types
     for key in "${!JSON_RESULTS[@]}"; do
         json_data="${JSON_RESULTS[$key]}"
-        # Extract data_type, time, and success from JSON
         data_type=$(echo "$json_data" | sed 's/.*"data_type":"\([^"]*\)".*/\1/')
-        time_val=$(echo "$json_data" | sed 's/.*"time_seconds":\([^,}]*\).*/\1/')
-        success=$(echo "$json_data" | sed 's/.*"success":\([^}]*\).*/\1/')
-        
-        if [ "$success" = "true" ] && [ "$time_val" != "null" ]; then
-            data_type_times[$data_type]=$(awk -v current="${data_type_times[$data_type]}" -v add="$time_val" "BEGIN {print current + add}" 2>/dev/null || echo "0")
-            data_type_counts[$data_type]=$((data_type_counts[$data_type] + 1))
-        fi
+        tested_data_types[$data_type]=1
     done
-    
-    for data_type in "${DATA_TYPES[@]}"; do
-        if [ "${data_type_counts[$data_type]}" -gt 0 ]; then
-            avg_time=$(awk "BEGIN {printf \"%.6f\", ${data_type_times[$data_type]} / ${data_type_counts[$data_type]}}")
-            DATA_TYPE_LABELS="${DATA_TYPE_LABELS}\"${data_type}\", "
-            DATA_TYPE_AVG_TIMES="${DATA_TYPE_AVG_TIMES}${avg_time}, "
-        fi
+
+    # Sort data types for consistent ordering
+    for data_type in $(printf '%s\n' "${!tested_data_types[@]}" | sort); do
+        DATA_TYPE_LABELS="${DATA_TYPE_LABELS}\"${data_type}\", "
     done
     DATA_TYPE_LABELS="${DATA_TYPE_LABELS%, }"
-    DATA_TYPE_AVG_TIMES="${DATA_TYPE_AVG_TIMES%, }"
+
+    # Generate datasets for each algorithm
+    for algo in "${ALGORITHMS[@]}"; do
+        display_name=$(get_algo_display_name "$algo")
+        color=$(get_algo_color "$algo")
+        algo_data=""
+        
+        for data_type in $(printf '%s\n' "${!tested_data_types[@]}" | sort); do
+            key="$algo-$data_type"
+            if [ "${algo_data_type_counts[$key]}" -gt 0 ]; then
+                avg_time=$(awk "BEGIN {printf \"%.6f\", ${algo_data_type_times[$key]} / ${algo_data_type_counts[$key]}}")
+                algo_data="${algo_data}${avg_time}, "
+            else
+                algo_data="${algo_data}null, "
+            fi
+        done
+        algo_data="${algo_data%, }"
+        
+        DATA_TYPE_DATASETS="${DATA_TYPE_DATASETS}{
+            label: '${display_name}',
+            data: [${algo_data}],
+            backgroundColor: '${color}',
+            borderColor: '${color}',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4
+        }, "
+    done
+    DATA_TYPE_DATASETS="${DATA_TYPE_DATASETS%, }"
 
     CHART_SCRIPT="
         // Algorithm performance chart
@@ -1037,15 +1059,7 @@ if [ "$GENERATE_HTML" = true ] && [ "$GENERATE_JSON_ONLY" = false ]; then
             type: 'line',
             data: {
                 labels: [${DATA_TYPE_LABELS}],
-                datasets: [{
-                    label: 'Average Time (seconds)',
-                    data: [${DATA_TYPE_AVG_TIMES}],
-                    backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                    borderColor: 'rgba(52, 152, 219, 1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
+                datasets: [${DATA_TYPE_DATASETS}]
             },
             options: {
                 responsive: true,
@@ -1067,7 +1081,7 @@ if [ "$GENERATE_HTML" = true ] && [ "$GENERATE_JSON_ONLY" = false ]; then
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Average Execution Time by Data Type'
+                        text: 'Average Execution Time by Data Type and Algorithm'
                     }
                 }
             }
