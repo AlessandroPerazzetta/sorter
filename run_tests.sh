@@ -429,7 +429,7 @@ if [ "$GENERATE_TEXT" = true ] && [ "$GENERATE_JSON_ONLY" = false ]; then
 fi
 
 if [ "$GENERATE_HTML" = true ] && [ "$GENERATE_JSON_ONLY" = false ]; then
-    cat > "$HTML_FILE" << 'EOF'
+    cat > "$HTML_FILE" << "EOF"
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1179,6 +1179,7 @@ if [ "$GENERATE_HTML" = true ] && [ "$GENERATE_JSON_ONLY" = false ]; then
 
     # Insert total tests in footer
     sed -i "s|<span id=\"total-tests\"></span>|$total_tests|" "$HTML_FILE"
+    sed -i "s|\$(date)|$(date)|" "$HTML_FILE"
 fi
 
 # Generate JSON report from JSON_RESULTS array

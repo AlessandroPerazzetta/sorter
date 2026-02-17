@@ -355,7 +355,7 @@ if [ "$GENERATE_HTML" = true ]; then
     DATA_TYPE_DATASETS="${DATA_TYPE_DATASETS%, }"
 
     # Generate HTML content (same as in run_tests.sh)
-    cat > "$HTML_FILE" << 'EOF'
+    cat > "$HTML_FILE" << "EOF"
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -892,6 +892,7 @@ EOF
     sed -i '/<!-- CHART_DATA -->/d' "$HTML_FILE"
 
     sed -i "s|<span id=\"total-tests\"></span>|$TOTAL_TESTS|" "$HTML_FILE"
+    sed -i "s|\$(date)|$(date)|" "$HTML_FILE"
 
     echo -e "${GREEN}HTML report saved to: $HTML_FILE${NC}"
 fi
