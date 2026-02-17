@@ -8,6 +8,9 @@ reports/
 # Saved generated data
 data/
 
+# Saved sorting results
+results/
+
 # Agent and AI assistant files
 .cursorrules
 .grok-instructions.md

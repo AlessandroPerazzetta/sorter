@@ -148,12 +148,12 @@ fn load_data_from_file(
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().skip(1).collect();
 
-    if args.len() < 3 || args.len() > 8 {
+    if args.len() < 3 || args.len() > 10 {
         println!(
-            "Usage: sorter [--parallel] [--data-type <type>] [--save-data <file>] [--load-data <file>] <algorithm> <data_pattern> <size>"
+            "Usage: sorter [--parallel] [--data-type <type>] [--save-data <file>] [--load-data <file>] [--save-results <dir>] <algorithm> <data_pattern> <size>"
         );
         println!(
-            "       sorter [--data-type <type>] [--save-data <file>] [--load-data <file>] <algorithm> <data_pattern> <size>"
+            "       sorter [--data-type <type>] [--save-data <file>] [--load-data <file>] [--save-results <dir>] <algorithm> <data_pattern> <size>"
         );
         println!("Algorithms: bubble, selection, insertion, merge, quick, heap");
         println!(
@@ -170,11 +170,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("         --data-type <type> (specify data type for generation/loading)");
         println!("         --save-data <file> (save generated data to file)");
         println!("         --load-data <file> (load data from file instead of generating)");
+        println!("         --save-results <dir> (save sorting results as JSON to directory)");
         println!("Example: sorter bubble random 1000");
         println!("Example: sorter --data-type f64 bubble random 1000");
         println!("Example: sorter --parallel --data-type string merge random 10000");
         println!("Example: sorter --save-data data.txt bubble random 1000");
         println!("Example: sorter --load-data data.txt --data-type i32 bubble random 1000");
+        println!("Example: sorter --save-results results/ bubble random 1000");
         return Ok(());
     }
 
@@ -183,6 +185,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut data_type = DataType::I32; // Default data type
     let mut save_data_file: Option<String> = None;
     let mut load_data_file: Option<String> = None;
+    let mut save_results_dir: Option<String> = None;
     let mut positional_args = Vec::new();
 
     let mut i = 0;
@@ -222,6 +225,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     i += 2;
                 } else {
                     println!("Error: --load-data requires a filename argument");
+                    return Ok(());
+                }
+            }
+            "--save-results" => {
+                if i + 1 < args.len() {
+                    save_results_dir = Some(args[i + 1].clone());
+                    i += 2;
+                } else {
+                    println!("Error: --save-results requires a directory argument");
                     return Ok(());
                 }
             }
@@ -357,6 +369,53 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "Last 10 elements: {:?}",
         &data[data.len().saturating_sub(10)..]
     );
+
+    // Save results to JSON file if requested
+    if let Some(dir_path) = &save_results_dir {
+        use std::fs;
+        use std::path::Path;
+
+        // Create directory if it doesn't exist
+        if let Err(e) = fs::create_dir_all(dir_path) {
+            println!("Error creating results directory '{}': {}", dir_path, e);
+            return Ok(());
+        }
+
+        // Generate filename based on algorithm, data pattern, size, and timestamp
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let filename = format!(
+            "{}_{}_{}_{}_{}.json",
+            algorithm,
+            data_pattern,
+            size,
+            data_type.as_str(),
+            timestamp
+        );
+        let filepath = Path::new(dir_path).join(filename);
+
+        // Create JSON structure
+        let result = serde_json::json!({
+            "algorithm": algorithm,
+            "data_type": format!("{:?}", data_type),
+            "data_pattern": data_pattern,
+            "size": size,
+            "execution_time_seconds": duration.as_secs_f64(),
+            "passes": passes,
+            "parallel": parallel || is_parallel_alg,
+            "gpu_accelerated": algorithm.starts_with("gpu-"),
+            "timestamp": timestamp,
+            "sorted_data": data.iter().map(|item| format!("{}", item)).collect::<Vec<_>>()
+        });
+
+        // Write to file
+        match fs::write(&filepath, result.to_string()) {
+            Ok(_) => println!("Results saved to: {}", filepath.display()),
+            Err(e) => println!("Error saving results to '{}': {}", filepath.display(), e),
+        }
+    }
 
     Ok(())
 }

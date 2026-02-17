@@ -199,4 +199,21 @@ impl DataType {
             )
         })
     }
+
+    /// Returns the string representation of this data type
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            DataType::I8 => "i8",
+            DataType::I16 => "i16",
+            DataType::I32 => "i32",
+            DataType::I64 => "i64",
+            DataType::U8 => "u8",
+            DataType::U16 => "u16",
+            DataType::U32 => "u32",
+            DataType::U64 => "u64",
+            DataType::F32 => "f32",
+            DataType::F64 => "f64",
+            DataType::String => "string",
+        }
+    }
 }

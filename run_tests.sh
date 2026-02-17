@@ -19,6 +19,7 @@ PROFILE="light"  # Default profile for development
 CUSTOM_SIZES=""  # Custom sizes argument
 SAVE_DATA_DIR=""  # Directory to save generated data files
 LOAD_DATA_DIR=""  # Directory to load data files from
+SAVE_RESULTS_DIR=""  # Directory to save sorting results as JSON
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -67,6 +68,11 @@ while [[ $# -gt 0 ]]; do
             shift
             shift
             ;;
+        --save-results)
+            SAVE_RESULTS_DIR="$2"
+            shift
+            shift
+            ;;
         *)
             echo -e "${RED}Unknown option: $1${NC}"
             echo "Use -h or --help for usage information"
@@ -93,6 +99,8 @@ OPTIONS:
                         Files will be named as 'algo_dataType_size.txt'
     --load-data DIR     Load data files from specified directory instead of generating
                         Files should be named as 'algo_dataType_size.txt'
+    --save-results DIR  Save sorting results as JSON files to specified directory
+                        Each file contains algorithm info, execution time, and sorted data
     --json-only         Run tests and generate JSON report only (no HTML/text)
     --parallel          Run tests in parallel for faster execution
     --max-jobs NUM      Maximum number of parallel jobs (default: 4)
@@ -116,6 +124,7 @@ EXAMPLES:
     ./run_tests.sh --size "100,500,1000"  # Custom sizes with light profile
     ./run_tests.sh --profile medium --size "1000,5000"  # Medium profile with custom sizes
     ./run_tests.sh --save-data ./data  # Save generated data to ./data directory
+    ./run_tests.sh --save-results ./results  # Save sorting results to ./results directory
     ./run_tests.sh --json-only        # Run tests, generate JSON only
     ./run_tests.sh --parallel --max-jobs 8 --profile full  # Run full profile in parallel
     ./run_tests.sh --html            # Generate HTML report
@@ -332,6 +341,13 @@ run_test() {
         else
             cargo_cmd+=("--load-data" "$load_filename")
         fi
+    fi
+
+    # Add save-results option if specified
+    if [ -n "$SAVE_RESULTS_DIR" ]; then
+        # Create directory if it doesn't exist
+        mkdir -p "$SAVE_RESULTS_DIR"
+        cargo_cmd+=("--save-results" "$SAVE_RESULTS_DIR")
     fi
 
     # Add the required arguments
