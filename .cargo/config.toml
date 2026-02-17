@@ -1,0 +1,5 @@
+[build]
+target-dir = "/tmp/sorter/target"
+
+[alias]
+build-docs = "doc --no-deps --workspace --document-private-items"

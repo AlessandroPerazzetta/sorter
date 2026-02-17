@@ -1,0 +1,31 @@
+# Rust build artifacts
+target/
+Cargo.lock
+
+# Benchmark reports
+reports/
+
+# Agent and AI assistant files
+.cursorrules
+.grok-instructions.md
+.github/copilot-instructions.md
+.claude*
+.cursor*
+.windsor*
+.agent*
+
+# IDE files
+.vscode/
+.zed/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
