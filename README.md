@@ -334,7 +334,7 @@ HTML reports include:
 - **Detailed Results Table**: Complete test results with sorting and pagination
 - **Summary Statistics**: Success/failure counts and totals
 
-![Benchmark Report Preview](https://via.placeholder.com/800x400/2d3748/ffffff?text=Benchmark+Report+Preview)
+![Benchmark Report Preview](assets/benchmark_results_screenshot.png)
 
 *Generate interactive reports with: `./run_tests.sh --html`*
 
