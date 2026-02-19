@@ -190,11 +190,17 @@
             font-size: 1.2em;
             color: #7f8c8d;
         }
-        .error {
-            text-align: center;
-            padding: 50px;
-            font-size: 1.2em;
-            color: #e74c3c;
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+        .sortable:hover {
+            background-color: #2980b9;
+        }
+        .sort-arrow {
+            margin-left: 5px;
+            font-size: 0.8em;
         }
     </style>
 </head>
@@ -238,12 +244,12 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Algorithm</th>
-                        <th>Data Type</th>
-                        <th>Size</th>
-                        <th>Time (s)</th>
-                        <th>Passes</th>
-                        <th>Status</th>
+                        <th class="sortable" data-column="algorithm">Algorithm <span class="sort-arrow"></span></th>
+                        <th class="sortable" data-column="data_type">Data Type <span class="sort-arrow"></span></th>
+                        <th class="sortable" data-column="size">Size <span class="sort-arrow"></span></th>
+                        <th class="sortable" data-column="time">Time (s) <span class="sort-arrow"></span></th>
+                        <th class="sortable" data-column="passes">Passes <span class="sort-arrow"></span></th>
+                        <th class="sortable" data-column="status">Status <span class="sort-arrow"></span></th>
                     </tr>
                 </thead>
                 <tbody id="results-body">
@@ -270,6 +276,76 @@
 
         let benchmarkData = null;
         let selectedAlgorithms = new Set();
+        let currentSort = { column: null, direction: 'asc' };
+
+        // Sorting functionality
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+
+            benchmarkData.sort((a, b) => {
+                let aVal, bVal;
+                switch(column) {
+                    case 'algorithm':
+                        aVal = a.algorithm;
+                        bVal = b.algorithm;
+                        break;
+                    case 'data_type':
+                        aVal = a.data_type;
+                        bVal = b.data_type;
+                        break;
+                    case 'size':
+                        aVal = parseInt(a.size);
+                        bVal = parseInt(b.size);
+                        break;
+                    case 'time':
+                        aVal = a.success ? parseFloat(a.time_seconds) : -1;
+                        bVal = b.success ? parseFloat(b.time_seconds) : -1;
+                        break;
+                    case 'passes':
+                        aVal = a.success ? parseInt(a.passes) : -1;
+                        bVal = b.success ? parseInt(b.passes) : -1;
+                        break;
+                    case 'status':
+                        aVal = a.success ? 1 : 0;
+                        bVal = b.success ? 1 : 0;
+                        break;
+                }
+
+                if (currentSort.direction === 'asc') {
+                    return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                } else {
+                    return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                }
+            });
+
+            generateResultsTable();
+            updateSortIndicators();
+            applyFilter(); // Reapply current filter after sorting
+        }
+
+        function updateSortIndicators() {
+            document.querySelectorAll('.sort-arrow').forEach(arrow => arrow.textContent = '');
+            if (currentSort.column) {
+                const arrow = document.querySelector(`th[data-column="${currentSort.column}"] .sort-arrow`);
+                if (arrow) {
+                    arrow.textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+                }
+            }
+        }
+
+        function addSortListeners() {
+            document.querySelectorAll('.sortable').forEach(th => {
+                th.addEventListener('click', () => {
+                    const column = th.getAttribute('data-column');
+                    sortTable(column);
+                });
+            });
+        }
 
         // Load data and initialize
         async function loadData() {
@@ -290,6 +366,7 @@
             generateSummaryStats();
             generateAlgorithmBadges();
             generateResultsTable();
+            addSortListeners();
             generateCharts();
             initializeAlgorithmFilter();
 

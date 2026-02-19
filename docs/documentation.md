@@ -232,6 +232,35 @@ The benchmarking system provides comprehensive CLI options:
 - **HTML Reports**: Interactive charts and analysis with dynamic JSON loading
 - **Comparative Analysis**: Algorithm performance comparison
 
+### Interactive HTML Reports
+
+The benchmark suite generates comprehensive HTML reports with interactive features:
+
+**Key Features**:
+- **Performance Charts**: Bar charts and line graphs using Chart.js for algorithm comparison
+- **Algorithm Badges**: Visual categorization (Sequential, Parallel CPU, GPU-Accelerated)
+- **Interactive Filtering**: Filter results by algorithm type with select/clear all buttons
+- **Sortable Table**: Click column headers to sort by Algorithm, Data Type, Size, Time, Passes, or Status
+- **Summary Statistics**: Dynamic stats that update with filtering
+- **Embedded Data**: JSON data embedded directly in HTML for offline viewing
+
+**Table Sorting**:
+- **Algorithm**: Alphabetical sorting
+- **Data Type**: String sorting (f64, i32, etc.)
+- **Size**: Numerical sorting
+- **Time (s)**: Numerical sorting (failed tests shown as "N/A" and sorted to end)
+- **Passes**: Numerical sorting (failed tests shown as "N/A")
+- **Status**: Success before failed
+
+**Usage**:
+```bash
+# Generate HTML report during testing
+./run_tests.sh --html
+
+# Generate HTML from existing JSON
+./generate_reports.sh --input-json reports/benchmark_results_*.json --html
+```
+
 ### Test Data Generation
 
 The `data/generators.rs` module provides sophisticated test data generation:

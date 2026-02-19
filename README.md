@@ -345,7 +345,7 @@ HTML reports are generated from a static template that dynamically loads JSON da
 - **Performance Charts**: Bar charts and line graphs using Chart.js
 - **Algorithm Comparison**: Average times by algorithm and data type
 - **Interactive Filtering**: Filter results by algorithm category
-- **Detailed Results Table**: Complete test results with sorting and pagination
+- **Detailed Results Table**: Complete test results with **sortable columns** (Algorithm, Data Type, Size, Time, Passes, Status)
 - **Summary Statistics**: Success/failure counts and totals
 - **Dynamic Loading**: Reports load fresh JSON data without regeneration
 
