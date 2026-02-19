@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust Sorter Benchmark Results</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .summary {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        .summary h2 {
+            margin-top: 0;
+            color: #34495e;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+        .stat {
+            text-align: center;
+            margin: 10px;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #27ae60;
+        }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        .charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .chart-container {
+            background: white;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-container h3 {
+            margin-top: 0;
+            color: #34495e;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        tr:hover {
+            background-color: #e8f4fd;
+        }
+        .success { color: #27ae60; font-weight: bold; }
+        .failure { color: #e74c3c; font-weight: bold; }
+        .time { font-family: 'Courier New', monospace; }
+        .footer {
+            text-align: center;
+            color: #7f8c8d;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+        }
+        .algorithm-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .badge.selected {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 2px solid #fff;
+        }
+        .badge.unselected {
+            opacity: 0.4;
+        }
+        .badge-bubble { background: #e74c3c; color: white; }
+        .badge-selection { background: #f39c12; color: white; }
+        .badge-insertion { background: #f1c40f; color: black; }
+        .badge-merge { background: #27ae60; color: white; }
+        .badge-quick { background: #3498db; color: white; }
+        .badge-heap { background: #9b59b6; color: white; }
+        .badge-parallel-bubble { background: #c0392b; color: white; }
+        .badge-parallel-selection { background: #e67e22; color: white; }
+        .badge-parallel-merge { background: #229954; color: white; }
+        .badge-parallel-quick { background: #2980b9; color: white; }
+        .badge-parallel-heap { background: #8e44ad; color: white; }
+        .badge-gpu-sort { background: #16a085; color: white; }
+        .badge-gpu-bitonic { background: #2c3e50; color: white; }
+        .filter-controls {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+        }
+        .filter-controls h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+            font-size: 0.9em;
+        }
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 4px;
+            background: #6c757d;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background-color 0.2s;
+        }
+        .filter-btn:hover {
+            background: #5a6268;
+        }
+        .filter-btn.select-all {
+            background: #28a745;
+        }
+        .filter-btn.select-all:hover {
+            background: #218838;
+        }
+        .filter-btn.clear-all {
+            background: #dc3545;
+        }
+        .filter-btn.clear-all:hover {
+            background: #c82333;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+        .error {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦀 Rust Sorter Benchmark Results</h1>
+        <div id="loading" class="loading">Loading benchmark data...</div>
+        <div id="content" style="display: none;">
+            <div class="summary">
+                <h2>📊 Test Summary</h2>
+                <div class="stats" id="summary-stats">
+                    <!-- Stats will be inserted here -->
+                </div>
+            </div>
+
+            <h2>📈 Performance Charts</h2>
+            <div class="charts">
+                <div class="chart-container">
+                    <h3>Average Time by Algorithm</h3>
+                    <canvas id="algorithmChart" width="400" height="300"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Average Time by Data Type</h3>
+                    <canvas id="dataTypeChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+
+            <h2>🏷️ Algorithms Tested</h2>
+            <div class="algorithm-badges" id="algorithm-badges">
+                <!-- Algorithm badges will be inserted here -->
+            </div>
+
+            <h2>📋 Detailed Results</h2>
+            <div class="filter-controls">
+                <h4>Filter Results by Algorithm:</h4>
+                <div class="filter-buttons">
+                    <button class="filter-btn select-all" onclick="selectAllAlgorithms()">Select All</button>
+                    <button class="filter-btn clear-all" onclick="clearAllAlgorithms()">Clear All</button>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Algorithm</th>
+                        <th>Data Type</th>
+                        <th>Size</th>
+                        <th>Time (s)</th>
+                        <th>Passes</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="results-body">
+                    <!-- Results will be inserted here -->
+                </tbody>
+            </table>
+
+            <div class="footer">
+                <p>Generated on: <span id="generated-date"></span> | Total Tests: <span id="total-tests"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <script id="benchmark-data" type="application/json">
+        <!-- BENCHMARK_DATA -->
+    </script>
+
+    <script>
+        // Determine JSON path from HTML filename
+        const currentPath = window.location.pathname;
+        const htmlFilename = currentPath.split('/').pop();
+        const jsonFilename = htmlFilename.replace('.html', '.json');
+        const jsonPath = jsonFilename;
+
+        let benchmarkData = null;
+        let selectedAlgorithms = new Set();
+
+        // Load data and initialize
+        async function loadData() {
+            try {
+                const jsonData = JSON.parse(document.getElementById('benchmark-data').textContent);
+                benchmarkData = jsonData.results; // Extract the results array
+                initializePage();
+            } catch (error) {
+                console.error('Error loading benchmark data:', error);
+                document.getElementById('loading').innerHTML = `<div class="error">Error loading benchmark data: ${error.message}<br>The embedded JSON data may be corrupted.</div>`;
+            }
+        }
+
+        function initializePage() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+
+            generateSummaryStats();
+            generateAlgorithmBadges();
+            generateResultsTable();
+            generateCharts();
+            initializeAlgorithmFilter();
+
+            // Set generated date
+            document.getElementById('generated-date').textContent = new Date().toLocaleString();
+        }
+
+        function generateSummaryStats() {
+            const totalTests = benchmarkData.length;
+            let successful = 0;
+            let failed = 0;
+
+            benchmarkData.forEach(result => {
+                if (result.success) {
+                    successful++;
+                } else {
+                    failed++;
+                }
+            });
+
+            const statsHtml = `
+                <div class="stat">
+                    <div class="stat-number">${totalTests}</div>
+                    <div class="stat-label">Total Tests</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" style="color: #27ae60;">${successful}</div>
+                    <div class="stat-label">Successful</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" style="color: #e74c3c;">${failed}</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            `;
+
+            document.getElementById('summary-stats').innerHTML = statsHtml;
+            document.getElementById('total-tests').textContent = totalTests;
+        }
+
+        function getAlgoDisplayName(algo) {
+            const names = {
+                "bubble": "Bubble Sort",
+                "selection": "Selection Sort",
+                "insertion": "Insertion Sort",
+                "merge": "Merge Sort",
+                "quick": "Quick Sort",
+                "heap": "Heap Sort",
+                "parallel-bubble": "Parallel Bubble Sort",
+                "parallel-selection": "Parallel Selection Sort",
+                "parallel-merge": "Parallel Merge Sort",
+                "parallel-quick": "Parallel Quick Sort",
+                "parallel-heap": "Parallel Heap Sort",
+                "gpu-sort": "GPU Sort",
+                "gpu-bitonic": "GPU Bitonic Sort"
+            };
+            return names[algo] || algo;
+        }
+
+        function getAlgoCategory(algo) {
+            if (algo.startsWith('parallel-')) return 'parallel';
+            if (algo.startsWith('gpu-')) return 'gpu';
+            return 'sequential';
+        }
+
+        function generateAlgorithmBadges() {
+            const testedAlgorithms = new Set(benchmarkData.map(result => result.algorithm));
+            const badges = {
+                sequential: [],
+                parallel: [],
+                gpu: []
+            };
+
+            testedAlgorithms.forEach(algo => {
+                const category = getAlgoCategory(algo);
+                const displayName = getAlgoDisplayName(algo);
+                const badgeClass = `badge-${algo}`;
+                const badgeHtml = `<span class="badge ${badgeClass}" data-algorithm="${algo}">${displayName}</span>`;
+                badges[category].push(badgeHtml);
+            });
+
+            let badgesHtml = '';
+            if (badges.sequential.length > 0) {
+                badgesHtml += `<h3>Sequential Algorithms</h3>${badges.sequential.join(' ')}`;
+            }
+            if (badges.parallel.length > 0) {
+                badgesHtml += `<h3>Parallel CPU Algorithms</h3>${badges.parallel.join(' ')}`;
+            }
+            if (badges.gpu.length > 0) {
+                badgesHtml += `<h3>GPU-Accelerated Algorithms</h3>${badges.gpu.join(' ')}`;
+            }
+
+            document.getElementById('algorithm-badges').innerHTML = badgesHtml;
+        }
+
+        function generateResultsTable() {
+            const tbody = document.getElementById('results-body');
+            let html = '';
+
+            benchmarkData.forEach(result => {
+                const displayName = getAlgoDisplayName(result.algorithm);
+                const badgeClass = `badge-${result.algorithm}`;
+                const statusClass = result.success ? 'success' : 'failure';
+                const statusText = result.success ? '✓ Success' : '✗ Failed';
+                const displayTime = result.success ? result.time_seconds : 'N/A';
+                const displayPasses = result.success ? result.passes : 'N/A';
+
+                html += `<tr data-algorithm="${result.algorithm}">
+                    <td><span class="badge ${badgeClass}">${displayName}</span></td>
+                    <td>${result.data_type}</td>
+                    <td>${result.size}</td>
+                    <td class="time">${displayTime}</td>
+                    <td>${displayPasses}</td>
+                    <td class="${statusClass}">${statusText}</td>
+                </tr>`;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function generateCharts() {
+            generateAlgorithmChart();
+            generateDataTypeChart();
+        }
+
+        function generateAlgorithmChart() {
+            const algoStats = {};
+            benchmarkData.forEach(result => {
+                if (!result.success) return;
+                if (!algoStats[result.algorithm]) {
+                    algoStats[result.algorithm] = { total: 0, count: 0 };
+                }
+                algoStats[result.algorithm].total += result.time_seconds;
+                algoStats[result.algorithm].count++;
+            });
+
+            const labels = [];
+            const data = [];
+            const colors = [];
+
+            Object.keys(algoStats).forEach(algo => {
+                const avg = algoStats[algo].total / algoStats[algo].count;
+                labels.push(getAlgoDisplayName(algo));
+                data.push(avg);
+                colors.push(getAlgoColor(algo));
+            });
+
+            const ctx = document.getElementById('algorithmChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Time (seconds)',
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: colors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Time (seconds)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Algorithm'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Average Execution Time by Sorting Algorithm'
+                        }
+                    }
+                }
+            });
+        }
+
+        function generateDataTypeChart() {
+            const dataTypeStats = {};
+            benchmarkData.forEach(result => {
+                if (!result.success) return;
+                const key = result.data_type;
+                if (!dataTypeStats[key]) {
+                    dataTypeStats[key] = {};
+                }
+                Object.keys(dataTypeStats[key]).forEach(algo => {
+                    if (!dataTypeStats[key][algo]) {
+                        dataTypeStats[key][algo] = { total: 0, count: 0 };
+                    }
+                });
+                if (!dataTypeStats[key][result.algorithm]) {
+                    dataTypeStats[key][result.algorithm] = { total: 0, count: 0 };
+                }
+                dataTypeStats[key][result.algorithm].total += result.time_seconds;
+                dataTypeStats[key][result.algorithm].count++;
+            });
+
+            const dataTypes = Object.keys(dataTypeStats).sort();
+            const algorithms = new Set();
+            dataTypes.forEach(dt => {
+                Object.keys(dataTypeStats[dt]).forEach(algo => algorithms.add(algo));
+            });
+            const algoList = Array.from(algorithms).sort();
+
+            const datasets = algoList.map(algo => {
+                const data = dataTypes.map(dt => {
+                    const stats = dataTypeStats[dt][algo];
+                    return stats ? stats.total / stats.count : null;
+                });
+                return {
+                    label: getAlgoDisplayName(algo),
+                    data: data,
+                    borderColor: getAlgoColor(algo),
+                    backgroundColor: getAlgoColor(algo),
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4
+                };
+            });
+
+            const ctx = document.getElementById('dataTypeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dataTypes,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Time (seconds)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Data Type'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Average Execution Time by Data Type and Algorithm'
+                        }
+                    }
+                }
+            });
+        }
+
+        function getAlgoColor(algo) {
+            const colors = {
+                "bubble": "#e74c3c",
+                "selection": "#f39c12",
+                "insertion": "#f1c40f",
+                "merge": "#27ae60",
+                "quick": "#3498db",
+                "heap": "#9b59b6",
+                "parallel-bubble": "#c0392b",
+                "parallel-selection": "#e67e22",
+                "parallel-merge": "#229954",
+                "parallel-quick": "#2980b9",
+                "parallel-heap": "#8e44ad",
+                "gpu-sort": "#16a085",
+                "gpu-bitonic": "#2c3e50"
+            };
+            return colors[algo] || "#95a5a6";
+        }
+
+        // Algorithm filtering functionality
+        function initializeAlgorithmFilter() {
+            const badges = document.querySelectorAll('.badge[data-algorithm]');
+            const tableRows = document.querySelectorAll('#results-body tr');
+
+            // Initially select all algorithms
+            badges.forEach(badge => {
+                const algorithm = badge.getAttribute('data-algorithm');
+                selectedAlgorithms.add(algorithm);
+                badge.classList.add('selected');
+            });
+
+            // Add click event listeners to badges
+            badges.forEach(badge => {
+                badge.addEventListener('click', function() {
+                    const algorithm = this.getAttribute('data-algorithm');
+                    toggleAlgorithm(algorithm);
+                });
+            });
+
+            // Initial filter application
+            applyFilter();
+        }
+
+        function toggleAlgorithm(algorithm) {
+            const badge = document.querySelector(`.badge[data-algorithm="${algorithm}"]`);
+
+            if (selectedAlgorithms.has(algorithm)) {
+                selectedAlgorithms.delete(algorithm);
+                badge.classList.remove('selected');
+                badge.classList.add('unselected');
+            } else {
+                selectedAlgorithms.add(algorithm);
+                badge.classList.add('selected');
+                badge.classList.remove('unselected');
+            }
+
+            applyFilter();
+        }
+
+        function selectAllAlgorithms() {
+            const badges = document.querySelectorAll('.badge[data-algorithm]');
+            badges.forEach(badge => {
+                const algorithm = badge.getAttribute('data-algorithm');
+                selectedAlgorithms.add(algorithm);
+                badge.classList.add('selected');
+                badge.classList.remove('unselected');
+            });
+            applyFilter();
+        }
+
+        function clearAllAlgorithms() {
+            const badges = document.querySelectorAll('.badge[data-algorithm]');
+            badges.forEach(badge => {
+                const algorithm = badge.getAttribute('data-algorithm');
+                selectedAlgorithms.delete(algorithm);
+                badge.classList.remove('selected');
+                badge.classList.add('unselected');
+            });
+            applyFilter();
+        }
+
+        function applyFilter() {
+            const tableRows = document.querySelectorAll('#results-body tr');
+            let visibleCount = 0;
+
+            tableRows.forEach(row => {
+                const algorithm = row.getAttribute('data-algorithm');
+                if (selectedAlgorithms.has(algorithm)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update summary stats to show filtered results
+            updateFilteredStats(visibleCount);
+        }
+
+        function updateFilteredStats(visibleCount) {
+            const totalRows = document.querySelectorAll('#results-body tr').length;
+            const summaryContainer = document.getElementById('summary-stats');
+
+            // Calculate filtered successful/failed counts
+            let filteredSuccessful = 0;
+            let filteredFailed = 0;
+
+            document.querySelectorAll('#results-body tr').forEach(row => {
+                if (row.style.display !== 'none') {
+                    const statusCell = row.querySelector('td:last-child');
+                    if (statusCell && statusCell.textContent.includes('Success')) {
+                        filteredSuccessful++;
+                    } else if (statusCell && statusCell.textContent.includes('Failed')) {
+                        filteredFailed++;
+                    }
+                }
+            });
+
+            const filteredStats = `
+                <div class="stat">
+                    <div class="stat-number">${visibleCount}</div>
+                    <div class="stat-label">Filtered Tests</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" style="color: #27ae60;">${filteredSuccessful}</div>
+                    <div class="stat-label">Successful</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" style="color: #e74c3c;">${filteredFailed}</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            `;
+
+            summaryContainer.innerHTML = filteredStats;
+        }
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

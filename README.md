@@ -4,7 +4,7 @@
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 
-A comprehensive collection of sorting algorithms implemented in Rust, featuring advanced benchmarking capabilities, parallel execution, GPU acceleration framework, and interactive performance analysis.
+A comprehensive collection of sorting algorithms implemented in Rust, featuring advanced benchmarking capabilities, parallel execution, GPU acceleration framework, and interactive performance analysis with dynamic HTML reports.
 
 ## 📋 Table of Contents
 
@@ -23,7 +23,7 @@ A comprehensive collection of sorting algorithms implemented in Rust, featuring 
 
 This project implements various sorting algorithms as modular, generic functions that work with any type implementing the `Ord` trait. The algorithms are organized in the `src/sorting/` directory for easy maintenance and extension.
 
-The suite includes a sophisticated benchmarking system with parallel execution, multiple test profiles, and interactive HTML reports with performance charts. It also features a GPU acceleration framework ready for implementation.
+The suite includes a sophisticated benchmarking system with parallel execution, multiple test profiles, and interactive HTML reports generated from static templates that dynamically load JSON data for efficient report generation.
 
 ## Quick Start
 
@@ -341,12 +341,13 @@ This project serves as both a performance tool and an educational resource for:
 
 ### 📊 Interactive Reports
 
-HTML reports include:
+HTML reports are generated from a static template that dynamically loads JSON data for fast report generation and real-time updates:
 - **Performance Charts**: Bar charts and line graphs using Chart.js
 - **Algorithm Comparison**: Average times by algorithm and data type
 - **Interactive Filtering**: Filter results by algorithm category
 - **Detailed Results Table**: Complete test results with sorting and pagination
 - **Summary Statistics**: Success/failure counts and totals
+- **Dynamic Loading**: Reports load fresh JSON data without regeneration
 
 ![Benchmark Report Preview](assets/benchmark_results_screenshot.png)
 

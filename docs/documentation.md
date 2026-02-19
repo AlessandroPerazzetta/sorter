@@ -20,7 +20,7 @@ The **Rust Sorter Benchmark Suite** is a comprehensive, high-performance collect
 
 - **Modular Algorithm Implementation**: Each sorting algorithm is implemented as a separate module for easy maintenance and extension
 - **Generic Type Support**: Works with any type implementing the `Ord` trait through a custom `SortableData` enum
-- **Advanced Benchmarking**: Parallel execution, multiple test profiles, and interactive HTML reports
+- **Advanced Benchmarking**: Parallel execution, multiple test profiles, and interactive HTML reports with dynamic data loading
 - **GPU Acceleration Framework**: Infrastructure for GPU-accelerated sorting (currently CPU-fallback)
 - **Data Persistence**: Save/load test data for reproducible benchmarking
 - **Result Archiving**: Save detailed sorting results as JSON for analysis and verification
@@ -229,7 +229,7 @@ The benchmarking system provides comprehensive CLI options:
 
 #### 4. **Report Generation**
 - **JSON Output**: Machine-readable results
-- **HTML Reports**: Interactive charts and analysis
+- **HTML Reports**: Interactive charts and analysis with dynamic JSON loading
 - **Comparative Analysis**: Algorithm performance comparison
 
 ### Test Data Generation
